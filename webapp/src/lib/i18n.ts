@@ -293,6 +293,7 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_are_you_sure_you_want_to_delete_count_selected_items: "Are you sure you want to delete {count} selected items?",
     txt_are_you_sure_you_want_to_delete_count_selected_items_permanently: "Are you sure you want to permanently delete {count} selected items?",
     txt_are_you_sure_you_want_to_delete_this_item: "Are you sure you want to delete this item?",
+    txt_are_you_sure_you_want_to_delete_this_passkey: "Are you sure you want to delete this passkey?",
     txt_are_you_sure_you_want_to_log_out: "Are you sure you want to log out?",
     txt_authenticator_key: "Authenticator Key",
     txt_authorized_devices: "Authorized Devices",
@@ -352,6 +353,7 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_delete_all_invite_codes_active_inactive: "Delete all invite codes (active/inactive)?",
     txt_delete_all_invites: "Delete all invites",
     txt_delete_item: "Delete Item",
+    txt_delete_passkey: "Delete Passkey",
     txt_delete_item_failed: "Delete item failed",
     txt_delete_permanently: "Delete Permanently",
     txt_archive: "Archive",
@@ -385,6 +387,9 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_device: "Device",
     txt_device_authorization_revoked: "Device trust revoked",
     txt_device_management: "Device Management",
+    txt_device_note: "Device Note",
+    txt_device_note_required: "Device name is required",
+    txt_device_note_updated: "Device name updated",
     txt_device_removed: "Device removed",
     txt_load_devices_failed: "Failed to load devices",
     txt_disable_this_send: "Disable this send",
@@ -457,6 +462,8 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_item_created: "Item created",
     txt_item_deleted: "Item deleted",
     txt_item_history: "Item History",
+    txt_password_history: "Password History",
+    txt_password_updated_value: "Password updated: {value}",
     txt_item_name_is_required: "Item name is required.",
     txt_item_updated: "Item updated",
     txt_last_edited_value: "Last edited: {value}",
@@ -548,6 +555,7 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_not_trusted: "Not trusted",
     txt_note: "Note",
     txt_notes: "Notes",
+    txt_replace_device_name_with_note: "Set a custom name for this device without changing its detected system type.",
     txt_number: "Number",
     txt_open: "Open",
     txt_opera_browser: "Opera Browser",
@@ -571,6 +579,9 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_password_hint_not_set: "No password hint is available for this email.",
     txt_password_hint_load_failed: "Failed to load password hint",
     txt_password_hint_too_long: "Password hint must be 120 characters or fewer",
+    txt_passkey: "Passkey",
+    txt_passkeys: "Passkeys",
+    txt_passkey_created_at_value: "Created on {value}",
     txt_phone: "Phone",
     txt_please_input_email_and_password: "Please input email and password",
     txt_please_input_master_password: "Please input master password",
@@ -613,6 +624,8 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_revoke_device_trust_failed: "Failed to revoke device trust",
     txt_revoke_all_device_trust_failed: "Failed to revoke all device trust",
     txt_revoke_trust: "Revoke Trust",
+    txt_untrust: "Untrust",
+    txt_update_device_note_failed: "Update device note failed",
     txt_role: "Role",
     txt_save: "Save",
     txt_save_profile: "Save Profile",
@@ -671,8 +684,6 @@ const messages: Record<Locale, Record<string, string>> = {
     txt_total_items_count: "{count} items",
     txt_totp_secret: "TOTP Secret",
     txt_totp_verify_failed: "TOTP verify failed",
-    txt_passkey: "Passkey",
-    txt_passkey_created_at_value: "Created at {value}",
     txt_attachments: "Attachments",
     txt_upload_attachments: "Upload attachments",
     txt_new_attachments: "New attachments",
@@ -1064,7 +1075,10 @@ const zhCNOverrides: Record<string, string> = {
   txt_additional_options: '附加选项',
   txt_custom_fields: '自定义字段',
   txt_notes: '备注',
+  txt_replace_device_name_with_note: '为这台设备设置自定义名称，不会改变系统识别到的设备类型。',
   txt_item_history: '项目历史',
+  txt_password_history: '密码历史记录',
+  txt_password_updated_value: '密码新于: {value}',
   txt_last_edited_value: '最后编辑：{value}',
   txt_created_value: '创建于：{value}',
   txt_username: '用户名',
@@ -1110,12 +1124,17 @@ const zhCNOverrides: Record<string, string> = {
   txt_view_recovery_code: '查看恢复代码',
   txt_copy_code: '复制代码',
   txt_device_management: '设备管理',
+  txt_device_note: '备注',
+  txt_device_note_required: '设备名称不能为空',
+  txt_device_note_updated: '设备名称已更新',
   txt_authorized_devices: '已授权设备',
   txt_device: '设备',
   txt_last_seen: '最后在线',
   txt_trusted_until: '信任至',
   txt_revoke_trust: '撤销信任',
+  txt_untrust: '不信任',
   txt_remove_device_2: '移除设备',
+  txt_update_device_note_failed: '更新设备备注失败',
   txt_not_trusted: '未信任',
   txt_unknown_device: '未知设备',
   txt_users: '用户',
@@ -1163,6 +1182,7 @@ const zhCNOverrides: Record<string, string> = {
   txt_no_name: '（无名称）',
   txt_are_you_sure_you_want_to_log_out: '确认要退出登录吗？',
   txt_delete_item: '删除项目',
+  txt_delete_passkey: '删除通行密钥',
   txt_delete_selected_items: '删除所选项目',
   txt_move_selected_items: '移动所选项目',
   txt_create_folder: '创建文件夹',
@@ -1226,6 +1246,7 @@ const zhCNOverrides: Record<string, string> = {
   txt_are_you_sure_you_want_to_delete_count_selected_items: '确认删除所选的 {count} 个项目？',
   txt_are_you_sure_you_want_to_delete_count_selected_items_permanently: '确认永久删除所选的 {count} 个项目？',
   txt_are_you_sure_you_want_to_delete_this_item: '确认删除此项目？',
+  txt_are_you_sure_you_want_to_delete_this_passkey: '确认删除这个通行密钥？',
   txt_authenticator_key: '验证器密钥',
   txt_brand: '品牌',
   txt_bulk_delete_failed: '批量删除失败',
@@ -1326,6 +1347,9 @@ const zhCNOverrides: Record<string, string> = {
   txt_password_hint_not_set: '这个邮箱没有可显示的密码提示。',
   txt_password_hint_load_failed: '加载密码提示失败',
   txt_password_hint_too_long: '密码提示最多只能输入 120 个字符',
+  txt_passkey: '通行密钥',
+  txt_passkeys: '通行密钥',
+  txt_passkey_created_at_value: '创建于 {value}',
   txt_phone: '电话',
   txt_please_input_email_and_password: '请输入邮箱和密码',
   txt_please_input_master_password: '请输入主密码',
@@ -1431,8 +1455,6 @@ zhCNOverrides.txt_lock = '锁定';
 zhCNOverrides.txt_menu = '菜单';
 zhCNOverrides.txt_settings = '设置';
 zhCNOverrides.txt_back = '返回';
-zhCNOverrides.txt_passkey = 'Passkey';
-zhCNOverrides.txt_passkey_created_at_value = '创建于 {value}';
 zhCNOverrides.txt_attachments = '附件';
 zhCNOverrides.txt_upload_attachments = '上传附件';
 zhCNOverrides.txt_new_attachments = '待上传附件';
@@ -1493,7 +1515,9 @@ messages.en.txt_delete_all_folders = 'Delete All Folders';
 messages.en.txt_delete_all_folders_message = 'Delete all folders? Items inside will move to No Folder.';
 messages.en.txt_folder_not_found = 'Folder not found';
 messages.en.txt_folder_deleted = 'Folder deleted';
+messages.en.txt_folder_updated = 'Folder updated';
 messages.en.txt_folders_deleted = 'Folders deleted';
+messages.en.txt_update_folder_failed = 'Update folder failed';
 messages.en.txt_delete_folder_failed = 'Delete folder failed';
 messages.en.txt_delete_all_folders_failed = 'Delete all folders failed';
 messages.en.txt_other = 'Other';
@@ -1575,7 +1599,9 @@ zhCNOverrides.txt_delete_all_folders = '删除全部文件夹';
 zhCNOverrides.txt_delete_all_folders_message = '确认删除全部文件夹吗？其中的项目将移至无文件夹。';
 zhCNOverrides.txt_folder_not_found = '文件夹不存在';
 zhCNOverrides.txt_folder_deleted = '文件夹已删除';
+zhCNOverrides.txt_folder_updated = '文件夹已重命名';
 zhCNOverrides.txt_folders_deleted = '文件夹已删除';
+zhCNOverrides.txt_update_folder_failed = '重命名文件夹失败';
 zhCNOverrides.txt_delete_folder_failed = '删除文件夹失败';
 zhCNOverrides.txt_delete_all_folders_failed = '删除全部文件夹失败';
 zhCNOverrides.txt_other = '其他';
@@ -1629,4 +1655,3 @@ export function setLocale(next: Locale): void {
     // ignore storage errors
   }
 }
-

@@ -189,12 +189,14 @@ export interface Device {
   userId: string;
   deviceIdentifier: string;
   name: string;
+  deviceNote: string | null;
   type: number;
   sessionStamp: string;
   encryptedUserKey: string | null;
   encryptedPublicKey: string | null;
   encryptedPrivateKey: string | null;
   devicePendingAuthRequest?: DevicePendingAuthRequest | null;
+  lastSeenAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -208,10 +210,14 @@ export interface DeviceResponse {
   id: string;
   userId?: string | null;
   name: string;
+  systemName?: string | null;
+  deviceNote?: string | null;
   identifier: string;
   type: number;
   creationDate: string;
   revisionDate: string;
+  lastSeenAt?: string | null;
+  hasStoredDevice?: boolean;
   isTrusted: boolean;
   encryptedUserKey: string | null;
   encryptedPublicKey: string | null;
@@ -347,7 +353,8 @@ export interface TokenResponse {
   access_token: string;
   expires_in: number;
   token_type: string;
-  refresh_token: string;
+  refresh_token?: string;
+  web_session?: boolean;
   TwoFactorToken?: string;
   Key: string;
   PrivateKey: string | null;
@@ -367,6 +374,10 @@ export interface TokenResponse {
   accountKeys?: any | null;
   UserDecryptionOptions: UserDecryptionOptions;
   userDecryptionOptions?: UserDecryptionOptions;
+  VaultKeys?: {
+    symEncKey: string;
+    symMacKey: string;
+  };
 }
 
 export interface ProfileResponse {

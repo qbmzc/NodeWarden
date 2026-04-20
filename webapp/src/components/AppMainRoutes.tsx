@@ -74,6 +74,7 @@ export interface AppMainRoutesProps {
   onBulkMoveVaultItems: (ids: string[], folderId: string | null) => Promise<void>;
   onVerifyMasterPassword: (email: string, password: string) => Promise<void>;
   onCreateFolder: (name: string) => Promise<void>;
+  onRenameFolder: (folderId: string, name: string) => Promise<void>;
   onDeleteFolder: (folderId: string) => Promise<void>;
   onBulkDeleteFolders: (folderIds: string[]) => Promise<void>;
   onDownloadVaultAttachment: (cipher: Cipher, attachmentId: string) => Promise<void>;
@@ -94,6 +95,7 @@ export interface AppMainRoutesProps {
   onOpenDisableTotp: () => void;
   onGetRecoveryCode: (masterPassword: string) => Promise<string>;
   onRefreshAuthorizedDevices: () => Promise<void>;
+  onRenameAuthorizedDevice: (device: AuthorizedDevice, name: string) => Promise<void>;
   onRevokeDeviceTrust: (device: AuthorizedDevice) => void;
   onRemoveDevice: (device: AuthorizedDevice) => void;
   onRevokeAllDeviceTrust: () => void;
@@ -192,6 +194,7 @@ export default function AppMainRoutes(props: AppMainRoutesProps) {
             onVerifyMasterPassword={props.onVerifyMasterPassword}
             onNotify={props.onNotify}
             onCreateFolder={props.onCreateFolder}
+            onRenameFolder={props.onRenameFolder}
             onDeleteFolder={props.onDeleteFolder}
             onBulkDeleteFolders={props.onBulkDeleteFolders}
             onDownloadAttachment={props.onDownloadVaultAttachment}
@@ -279,6 +282,7 @@ export default function AppMainRoutes(props: AppMainRoutesProps) {
               devices={props.authorizedDevices}
               loading={props.authorizedDevicesLoading}
               onRefresh={() => void props.onRefreshAuthorizedDevices()}
+              onRenameDevice={props.onRenameAuthorizedDevice}
               onRevokeTrust={props.onRevokeDeviceTrust}
               onRemoveDevice={props.onRemoveDevice}
               onRevokeAll={props.onRevokeAllDeviceTrust}
