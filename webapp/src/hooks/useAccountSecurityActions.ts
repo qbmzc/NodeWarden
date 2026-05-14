@@ -5,10 +5,13 @@ import {
   deleteAuthorizedDevice,
   deriveLoginHash,
   getCurrentDeviceIdentifier,
+  getApiKey,
   getTotpRecoveryCode,
+  rotateApiKey,
   revokeAuthorizedDeviceTrust,
   revokeAllAuthorizedDeviceTrust,
   setTotp,
+  trustAuthorizedDevicePermanently,
   updateAuthorizedDeviceName,
   updateProfile,
 } from '@/lib/api/auth';
@@ -129,7 +132,6 @@ export default function useAccountSecurityActions(options: UseAccountSecurityAct
         try {
           const derived = await deriveLoginHash(profile.email, disableTotpPassword, defaultKdfIterations);
           await setTotp(authedFetch, { enabled: false, masterPasswordHash: derived.hash });
-          if (profile.id) localStorage.removeItem(`nodewarden.totp.secret.${profile.id}`);
           clearDisableTotpDialog();
           await refetchTotpStatus();
           onNotify('success', t('txt_totp_disabled'));
@@ -146,6 +148,26 @@ export default function useAccountSecurityActions(options: UseAccountSecurityAct
         const code = await getTotpRecoveryCode(authedFetch, derived.hash);
         if (!code) throw new Error(t('txt_recovery_code_is_empty'));
         return code;
+      },
+
+      async getApiKey(masterPassword: string): Promise<string> {
+        if (!profile) throw new Error(t('txt_profile_unavailable'));
+        const normalized = String(masterPassword || '');
+        if (!normalized) throw new Error(t('txt_master_password_is_required'));
+        const derived = await deriveLoginHash(profile.email, normalized, defaultKdfIterations);
+        const key = await getApiKey(authedFetch, derived.hash);
+        if (!key) throw new Error(t('txt_api_key_is_empty'));
+        return key;
+      },
+
+      async rotateApiKey(masterPassword: string): Promise<string> {
+        if (!profile) throw new Error(t('txt_profile_unavailable'));
+        const normalized = String(masterPassword || '');
+        if (!normalized) throw new Error(t('txt_master_password_is_required'));
+        const derived = await deriveLoginHash(profile.email, normalized, defaultKdfIterations);
+        const key = await rotateApiKey(authedFetch, derived.hash);
+        if (!key) throw new Error(t('txt_api_key_is_empty'));
+        return key;
       },
 
       async refreshAuthorizedDevices() {
@@ -181,6 +203,26 @@ export default function useAccountSecurityActions(options: UseAccountSecurityAct
                 onNotify('success', t('txt_device_authorization_revoked'));
               } catch (error) {
                 onNotify('error', error instanceof Error ? error.message : t('txt_revoke_device_trust_failed'));
+              }
+            })();
+          },
+        });
+      },
+
+      openTrustDevicePermanently(device: AuthorizedDevice) {
+        onSetConfirm({
+          title: t('txt_trust_device_permanently'),
+          message: t('txt_trust_device_permanently_for_name', { name: device.name }),
+          danger: false,
+          onConfirm: () => {
+            onSetConfirm(null);
+            void (async () => {
+              try {
+                await trustAuthorizedDevicePermanently(authedFetch, device.identifier);
+                await refetchAuthorizedDevices();
+                onNotify('success', t('txt_device_trusted_permanently'));
+              } catch (error) {
+                onNotify('error', error instanceof Error ? error.message : t('txt_trust_device_permanently_failed'));
               }
             })();
           },

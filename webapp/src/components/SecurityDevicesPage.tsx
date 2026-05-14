@@ -1,15 +1,18 @@
 import { useState } from 'preact/hooks';
-import { Clock3, Pencil, RefreshCw, ShieldOff, Trash2 } from 'lucide-preact';
+import { Clock3, Pencil, RefreshCw, ShieldCheck, ShieldOff, Trash2 } from 'lucide-preact';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import LoadingState from '@/components/LoadingState';
 import type { AuthorizedDevice } from '@/lib/types';
 import { t } from '@/lib/i18n';
 
 interface SecurityDevicesPageProps {
   devices: AuthorizedDevice[];
   loading: boolean;
+  error: string;
   onRefresh: () => void;
   onRenameDevice: (device: AuthorizedDevice, name: string) => Promise<void>;
   onRevokeTrust: (device: AuthorizedDevice) => void;
+  onTrustPermanently: (device: AuthorizedDevice) => void;
   onRemoveDevice: (device: AuthorizedDevice) => void;
   onRevokeAll: () => void;
   onRemoveAll: () => void;
@@ -20,6 +23,12 @@ function formatDateTime(value: string | null | undefined): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return t('txt_dash');
   return date.toLocaleString();
+}
+
+function isPermanentTrust(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime()) && date.getUTCFullYear() >= 2099;
 }
 
 function mapDeviceTypeName(type: number): string {
@@ -66,13 +75,13 @@ export default function SecurityDevicesPage(props: SecurityDevicesPageProps) {
         <section className="card">
         <div className="section-head">
           <div>
-            <h3 style={{ margin: 0 }}>{t('txt_device_management')}</h3>
-            <div className="muted-inline" style={{ marginTop: 4 }}>
+            <h3 className="flush-title">{t('txt_device_management')}</h3>
+            <div className="muted-inline section-note">
               {t('txt_manage_device_sessions_and_30_day_totp_trusted_sessions')}
             </div>
           </div>
           <div className="actions">
-            <button type="button" className="btn btn-secondary small" onClick={props.onRefresh}>
+            <button type="button" className="btn btn-secondary small" disabled={props.loading} onClick={props.onRefresh}>
               <RefreshCw size={14} className="btn-icon" />
               {t('txt_refresh')}
             </button>
@@ -89,7 +98,16 @@ export default function SecurityDevicesPage(props: SecurityDevicesPageProps) {
         </section>
 
         <section className="card">
-        <h3 style={{ marginTop: 0 }}>{t('txt_authorized_devices')}</h3>
+        <h3 className="section-title-flush">{t('txt_authorized_devices')}</h3>
+        {!!props.error && (
+          <div className="local-error">
+            <span>{props.error}</span>
+            <button type="button" className="btn btn-secondary small" disabled={props.loading} onClick={props.onRefresh}>
+              <RefreshCw size={14} className="btn-icon" />
+              {t('txt_refresh')}
+            </button>
+          </div>
+        )}
         <table className="table">
           <thead>
             <tr>
@@ -124,7 +142,7 @@ export default function SecurityDevicesPage(props: SecurityDevicesPageProps) {
                   {device.trusted ? (
                     <div className="trusted-cell">
                       <Clock3 size={13} />
-                      <span>{formatDateTime(device.trustedUntil)}</span>
+                      <span>{isPermanentTrust(device.trustedUntil) ? t('txt_permanent_trust') : formatDateTime(device.trustedUntil)}</span>
                     </div>
                   ) : (
                     <span className="muted-inline">{t('txt_not_trusted')}</span>
@@ -140,6 +158,15 @@ export default function SecurityDevicesPage(props: SecurityDevicesPageProps) {
                     >
                       <ShieldOff size={14} className="btn-icon" />
                       {t('txt_untrust')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary small"
+                      disabled={!device.trusted || !device.trustedUntil || isPermanentTrust(device.trustedUntil)}
+                      onClick={() => props.onTrustPermanently(device)}
+                    >
+                      <ShieldCheck size={14} className="btn-icon" />
+                      {t('txt_trust_permanently')}
                     </button>
                     <button
                       type="button"
@@ -166,10 +193,17 @@ export default function SecurityDevicesPage(props: SecurityDevicesPageProps) {
                 </td>
               </tr>
             ))}
+            {props.loading && props.devices.length === 0 && (
+              <tr>
+                <td colSpan={7}>
+                  <LoadingState lines={5} compact />
+                </td>
+              </tr>
+            )}
             {!props.loading && props.devices.length === 0 && (
               <tr>
                 <td colSpan={7}>
-                  <div className="empty" style={{ minHeight: 80 }}>{t('txt_no_devices_found')}</div>
+                  <div className="empty empty-comfortable">{t('txt_no_devices_found')}</div>
                 </td>
               </tr>
             )}

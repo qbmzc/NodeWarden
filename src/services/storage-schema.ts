@@ -1,18 +1,32 @@
 // IMPORTANT:
-// Keep this schema list in sync with migrations/0001_init.sql.
-// Any new table/column/index must be added to both places together.
+// This is the runtime D1 schema bootstrap. Keep it in sync with
+// migrations/0001_init.sql. Any new table/column/index must be added to both
+// places together.
+//
+// WHEN CHANGING THIS:
+// - Bump STORAGE_SCHEMA_VERSION in src/services/storage.ts so existing installs
+//   rerun these idempotent statements.
+// - If the new table stores persistent data, update the backup export/import
+//   contract in src/services/backup-archive.ts and backup-import.ts.
+// - Keep statements idempotent; D1 may execute them again on later requests.
 const SCHEMA_STATEMENTS: readonly string[] = [
   'CREATE TABLE IF NOT EXISTS users (' +
   'id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, master_password_hint TEXT, master_password_hash TEXT NOT NULL, ' +
   'key TEXT NOT NULL, private_key TEXT, public_key TEXT, kdf_type INTEGER NOT NULL, ' +
   'kdf_iterations INTEGER NOT NULL, kdf_memory INTEGER, kdf_parallelism INTEGER, ' +
-  'security_stamp TEXT NOT NULL, role TEXT NOT NULL DEFAULT \'user\', status TEXT NOT NULL DEFAULT \'active\', verify_devices INTEGER NOT NULL DEFAULT 1, totp_secret TEXT, totp_recovery_code TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)',
+  'security_stamp TEXT NOT NULL, role TEXT NOT NULL DEFAULT \'user\', status TEXT NOT NULL DEFAULT \'active\', verify_devices INTEGER NOT NULL DEFAULT 1, totp_secret TEXT, totp_recovery_code TEXT, api_key TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)',
   'ALTER TABLE users ADD COLUMN master_password_hint TEXT',
   'ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT \'user\'',
   'ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT \'active\'',
   'ALTER TABLE users ADD COLUMN verify_devices INTEGER NOT NULL DEFAULT 1',
   'ALTER TABLE users ADD COLUMN totp_secret TEXT',
   'ALTER TABLE users ADD COLUMN totp_recovery_code TEXT',
+  'ALTER TABLE users ADD COLUMN api_key TEXT',
+
+  'CREATE TABLE IF NOT EXISTS domain_settings (' +
+  'user_id TEXT PRIMARY KEY, equivalent_domains TEXT NOT NULL DEFAULT \'[]\', custom_equivalent_domains TEXT NOT NULL DEFAULT \'[]\', excluded_global_equivalent_domains TEXT NOT NULL DEFAULT \'[]\', updated_at TEXT NOT NULL, ' +
+  'FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)',
+  'ALTER TABLE domain_settings ADD COLUMN custom_equivalent_domains TEXT NOT NULL DEFAULT \'[]\'',
 
   'CREATE TABLE IF NOT EXISTS user_revisions (' +
   'user_id TEXT PRIMARY KEY, revision_date TEXT NOT NULL, ' +
@@ -28,6 +42,7 @@ const SCHEMA_STATEMENTS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_ciphers_user_archived ON ciphers(user_id, archived_at)',
   'CREATE INDEX IF NOT EXISTS idx_ciphers_user_deleted ON ciphers(user_id, deleted_at)',
   'CREATE INDEX IF NOT EXISTS idx_ciphers_user_deleted_updated ON ciphers(user_id, deleted_at, updated_at)',
+  'CREATE INDEX IF NOT EXISTS idx_ciphers_user_folder ON ciphers(user_id, folder_id)',
 
   'CREATE TABLE IF NOT EXISTS folders (' +
   'id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, ' +
@@ -67,10 +82,16 @@ const SCHEMA_STATEMENTS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_invites_created_by ON invites(created_by, created_at)',
 
   'CREATE TABLE IF NOT EXISTS audit_logs (' +
-  'id TEXT PRIMARY KEY, actor_user_id TEXT, action TEXT NOT NULL, target_type TEXT, target_id TEXT, metadata TEXT, created_at TEXT NOT NULL, ' +
+  'id TEXT PRIMARY KEY, actor_user_id TEXT, action TEXT NOT NULL, category TEXT NOT NULL DEFAULT \'system\', level TEXT NOT NULL DEFAULT \'info\', target_type TEXT, target_id TEXT, metadata TEXT, created_at TEXT NOT NULL, ' +
   'FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL)',
+  'ALTER TABLE audit_logs ADD COLUMN category TEXT NOT NULL DEFAULT \'system\'',
+  'ALTER TABLE audit_logs ADD COLUMN level TEXT NOT NULL DEFAULT \'info\'',
+  'UPDATE audit_logs SET category = json_extract(metadata, \'$.category\') WHERE json_valid(metadata) AND json_extract(metadata, \'$.category\') IN (\'auth\', \'security\', \'device\', \'data\', \'system\')',
+  'UPDATE audit_logs SET level = json_extract(metadata, \'$.level\') WHERE json_valid(metadata) AND json_extract(metadata, \'$.level\') IN (\'info\', \'warn\', \'error\', \'security\')',
   'CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)',
   'CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_created ON audit_logs(actor_user_id, created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_audit_logs_category_created ON audit_logs(category, created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_audit_logs_level_created ON audit_logs(level, created_at)',
 
   'CREATE TABLE IF NOT EXISTS devices (' +
   'user_id TEXT NOT NULL, device_identifier TEXT NOT NULL, name TEXT NOT NULL, type INTEGER NOT NULL, session_stamp TEXT, encrypted_user_key TEXT, encrypted_public_key TEXT, encrypted_private_key TEXT, banned INTEGER NOT NULL DEFAULT 0, banned_at TEXT, device_note TEXT, last_seen_at TEXT, ' +
@@ -92,11 +113,6 @@ const SCHEMA_STATEMENTS: readonly string[] = [
   'token TEXT PRIMARY KEY, user_id TEXT NOT NULL, device_identifier TEXT NOT NULL, expires_at INTEGER NOT NULL, ' +
   'FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)',
   'CREATE INDEX IF NOT EXISTS idx_trusted_two_factor_device_tokens_user_device ON trusted_two_factor_device_tokens(user_id, device_identifier)',
-
-  'CREATE TABLE IF NOT EXISTS api_rate_limits (' +
-  'identifier TEXT NOT NULL, window_start INTEGER NOT NULL, count INTEGER NOT NULL, ' +
-  'PRIMARY KEY (identifier, window_start))',
-  'CREATE INDEX IF NOT EXISTS idx_api_rate_window ON api_rate_limits(window_start)',
 
   'CREATE TABLE IF NOT EXISTS login_attempts_ip (' +
   'ip TEXT PRIMARY KEY, attempts INTEGER NOT NULL, locked_until INTEGER, updated_at INTEGER NOT NULL)',

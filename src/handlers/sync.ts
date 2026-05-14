@@ -1,7 +1,7 @@
 import { Env, SyncResponse, CipherResponse, FolderResponse, ProfileResponse } from '../types';
 import { StorageService } from '../services/storage';
 import { errorResponse } from '../utils/response';
-import { cipherToResponse } from './ciphers';
+import { cipherToResponse, isCipherResponseSyncCompatible } from './ciphers';
 import { sendToResponse } from './sends';
 import { LIMITS } from '../config/limits';
 import {
@@ -9,11 +9,17 @@ import {
   buildUserDecryptionCompat,
   buildUserDecryptionOptions,
 } from '../utils/user-decryption';
+import { buildDomainsResponse } from '../services/domain-rules';
 
-function buildSyncCacheRequest(request: Request, userId: string, revisionDate: string, excludeDomains: boolean): Request {
+// CONTRACT:
+// /api/sync reuses cipherToResponse() as the single cipher response shaper.
+// Filtering invalid cipher responses here protects clients from stored rows that
+// would otherwise make official apps fail after an HTTP 200 sync.
+// Keep this aligned with src/handlers/ciphers.ts when adding new vault fields.
+function buildSyncCacheRequest(request: Request, userId: string, revisionDate: string, excludeDomains: boolean, excludeSends: boolean): Request {
   const url = new URL(request.url);
   const cacheUrl = new URL(
-    `/__nodewarden/cache/sync/${encodeURIComponent(userId)}/${encodeURIComponent(revisionDate)}/${excludeDomains ? '1' : '0'}`,
+    `/__nodewarden/cache/sync/${encodeURIComponent(userId)}/${encodeURIComponent(revisionDate)}/${excludeDomains ? '1' : '0'}/${excludeSends ? '1' : '0'}`,
     url.origin
   );
   return new Request(cacheUrl.toString(), { method: 'GET' });
@@ -35,6 +41,8 @@ export async function handleSync(request: Request, env: Env, userId: string): Pr
   const url = new URL(request.url);
   const excludeDomainsParam = url.searchParams.get('excludeDomains');
   const excludeDomains = excludeDomainsParam !== null && /^(1|true|yes)$/i.test(excludeDomainsParam);
+  const excludeSendsParam = url.searchParams.get('excludeSends');
+  const excludeSends = excludeSendsParam !== null && /^(1|true|yes)$/i.test(excludeSendsParam);
 
   const user = await storage.getUserById(userId);
   if (!user) {
@@ -42,17 +50,18 @@ export async function handleSync(request: Request, env: Env, userId: string): Pr
   }
 
   const revisionDate = await storage.getRevisionDate(userId);
-  const cacheRequest = buildSyncCacheRequest(request, userId, revisionDate, excludeDomains);
+  const cacheRequest = buildSyncCacheRequest(request, userId, revisionDate, excludeDomains, excludeSends);
   const cachedResponse = await readSyncCache(cacheRequest);
   if (cachedResponse) {
     return cachedResponse;
   }
 
-  const [ciphers, folders, sends, attachmentsByCipher] = await Promise.all([
+  const [ciphers, folders, sends, attachmentsByCipher, domainSettings] = await Promise.all([
     storage.getAllCiphers(userId),
     storage.getAllFolders(userId),
-    storage.getAllSends(userId),
+    excludeSends ? Promise.resolve([]) : storage.getAllSends(userId),
     storage.getAttachmentsByUserId(userId),
+    excludeDomains ? Promise.resolve(null) : storage.getUserDomainSettings(userId),
   ]);
   const accountKeys = buildAccountKeys(user);
   const userDecryptionOptions = buildUserDecryptionOptions(user);
@@ -84,7 +93,10 @@ export async function handleSync(request: Request, env: Env, userId: string): Pr
 
   const cipherResponses: CipherResponse[] = [];
   for (const cipher of ciphers) {
-    cipherResponses.push(cipherToResponse(cipher, attachmentsByCipher.get(cipher.id) || []));
+    const response = cipherToResponse(cipher, attachmentsByCipher.get(cipher.id) || []);
+    if (isCipherResponseSyncCompatible(response)) {
+      cipherResponses.push(response);
+    }
   }
 
   const folderResponses: FolderResponse[] = [];
@@ -93,6 +105,7 @@ export async function handleSync(request: Request, env: Env, userId: string): Pr
       id: folder.id,
       name: folder.name,
       revisionDate: folder.updatedAt,
+      creationDate: folder.createdAt,
       object: 'folder',
     });
   }
@@ -105,11 +118,12 @@ export async function handleSync(request: Request, env: Env, userId: string): Pr
     ciphers: cipherResponses,
     domains: excludeDomains
       ? null
-      : {
-          equivalentDomains: [],
-          globalEquivalentDomains: [],
-          object: 'domains',
-        },
+      : buildDomainsResponse(
+          domainSettings?.equivalentDomains || [],
+          domainSettings?.customEquivalentDomains || [],
+          domainSettings?.excludedGlobalEquivalentDomains || [],
+          { omitExcludedGlobals: true }
+        ),
     policies: [],
     sends: sendResponses,
     UserDecryption: {
