@@ -11,7 +11,7 @@ command = "npm run build"
 binding = "ASSETS"
 directory = "./dist"
 not_found_handling = "single-page-application"
-run_worker_first = false
+run_worker_first = true
 
 [triggers]
 crons = [ "*/5 * * * *" ]
@@ -24,6 +24,10 @@ database_name = "nodewarden-db"
 name = "NOTIFICATIONS_HUB"
 class_name = "NotificationsHub"
 
+[[durable_objects.bindings]]
+name = "BACKUP_TRANSFER_RUNNER"
+class_name = "BackupTransferRunner"
+
 [[r2_buckets]]
 binding = "ATTACHMENTS"
 bucket_name = "nodewarden-attachments"
@@ -31,3 +35,7 @@ bucket_name = "nodewarden-attachments"
 [[migrations]]
 tag = "v1-notifications-hub"
 new_sqlite_classes = [ "NotificationsHub" ]
+
+[[migrations]]
+tag = "v2-backup-transfer-runner"
+new_sqlite_classes = [ "BackupTransferRunner" ]
